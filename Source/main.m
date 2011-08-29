@@ -45,8 +45,13 @@
 @interface KVOTargetSuperclass : NSObject {} @end
 @implementation KVOTargetSuperclass @end
 
-@interface KVOTarget : KVOTargetSuperclass {} @end
+@interface KVOTarget : KVOTargetSuperclass {} 
+@property(retain) KVOTarget* subtarget;
+@end
+
 @implementation KVOTarget
+
+@synthesize subtarget;
 
 - (void)setKey: (id)newValue
 {
@@ -459,6 +464,35 @@ static void TestKVOTarget(void)
     describe();
 }
 
+static void TestKVOMultiLevelTarget(void)
+{
+    KVOTarget *target = [[KVOTarget alloc] init];
+    void (^describe)(void) = ^{
+        return;
+        
+        Class nsClass = [target class];
+        NSString *nsName = [nsClass description];
+        Class objcClass = object_getClass(target);
+        const char *objcName = class_getName(objcClass);
+        
+        NSLog(@"%@, %s %@ %p %p", target, objcName, nsName, objcClass, nsClass);
+    };
+    
+    describe();
+    
+    [target addObserver: target forKeyPath: @"subtarget.key" options: 0 context: NULL];
+    describe();
+    
+	
+    MAZeroingWeakRef *ref = [[MAZeroingWeakRef alloc] initWithTarget: target];
+    describe();
+    
+    /* This causes KVO to throw an exception saying 'Cannot remove an observer <KVOTarget_MAZeroingWeakRefSubclass 0x100117d90> for the key path "subtarget.key" from <KVOTarget_MAZeroingWeakRefSubclass 0x100117d90> because it is not registered as an observer.' */
+	[target removeObserver:target forKeyPath:@"subtarget.key"];
+    [ref release];
+    describe();
+}
+
 static void TestClassForCoder(void)
 {
     NSObject *obj = [[NSObject alloc] init];
@@ -520,6 +554,7 @@ int main(int argc, const char * argv[])
         TEST(TestCleanupBlockReleasingZWR);
         TEST(TestAccidentalResurrectionInCleanupBlock);
         TEST(TestKVOTarget);
+        TEST(TestKVOMultiLevelTarget);
         TEST(TestClassForCoder);
         TEST(TestKVOReleaseNoCrash);
         TEST(TestKVOReleaseCrash);

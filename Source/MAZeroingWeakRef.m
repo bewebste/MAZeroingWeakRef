@@ -163,6 +163,7 @@ static NSOperationQueue *gCFDelayedDestructionQueue;
         // nothing special about objc_allocateClassPair, it just
         // seems like a reasonable and safe choice for finding
         // the runtime functions
+#if MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_6
         Dl_info info;
         int success = dladdr(objc_allocateClassPair, &info);
         if(success)
@@ -184,6 +185,7 @@ static NSOperationQueue *gCFDelayedDestructionQueue;
                 }
             }
         }
+#endif
         
 #if COREFOUNDATION_HACK_LEVEL >= 3
         gCFWeakTargets = CFSetCreateMutable(NULL, 0, NULL);
